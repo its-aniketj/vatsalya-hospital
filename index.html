@@ -1,0 +1,1856 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Doctor Practice & Clinical Management Dashboard</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        bajaj: {
+                            blue: '#0056b3',
+                            darkBlue: '#003e80',
+                            lightBlue: '#eef5ff',
+                            accent: '#0284c7',
+                            hover: '#004494'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f4f6f9; color: #334155; }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        .chip-btn { transition: all 0.15s ease-in-out; }
+        .chip-btn.active { background-color: #e0f2fe; color: #0369a1; border-color: #0284c7; font-weight: 600; }
+    </style>
+</head>
+<body class="bg-gray-100 flex flex-col h-screen overflow-hidden text-sm">
+
+    <!-- Top Navbar -->
+    <header class="bg-white border-b border-gray-200 px-4 py-2.5 flex items-center justify-between shrink-0 z-20">
+        <!-- Left: Logo & Search -->
+        <div class="flex items-center space-x-6">
+            <!-- Brand Logo -->
+            <div class="flex items-center space-x-2 cursor-pointer" onclick="showDashboard()">
+                <div class="bg-blue-700 text-white font-black px-2 py-1 rounded text-xs tracking-wider flex items-center">
+                    <span class="text-yellow-400 mr-1">Vatsalya</span> Hospital
+                </div>
+                <span class="text-xs font-semibold text-gray-500 hidden sm:inline-block">HEALTH</span>
+            </div>
+
+            <!-- Search Bar -->
+            <div class="relative w-64 md:w-96" id="topSearchContainer">
+                <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs"></i>
+                <input type="text" id="searchInput" oninput="filterAppointments()" 
+                    placeholder="Search by name, UHID or phone no." 
+                    class="w-full pl-9 pr-4 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all">
+            </div>
+        </div>
+
+        <!-- Right: Actions & User Profile -->
+        <div class="flex items-center space-x-4">
+            <div id="liveClock" class="hidden sm:flex items-center space-x-2 px-3 py-1.5 bg-blue-50/80 border border-blue-100 rounded-lg text-xs text-blue-900 shadow-xs">
+                <i class="fa-regular fa-clock text-blue-600"></i>
+                <span id="clockTime" class="font-semibold font-mono text-xs">--:--:--</span>
+            </div>
+
+            <button class="relative p-2 text-gray-500 hover:text-blue-600 hover:bg-gray-100 rounded-full transition" title="Notifications">
+                <i class="fa-regular fa-bell text-base"></i>
+                <span class="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+            </button>
+
+            <button class="p-2 text-gray-500 hover:text-blue-600 hover:bg-gray-100 rounded-full transition" title="Support">
+                <i class="fa-solid fa-stethoscope text-base"></i>
+            </button>
+
+            <!-- Add Appointment Button -->
+            <button onclick="openModal('addAppointmentModal')" 
+                class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-1.5 rounded-lg text-xs font-medium flex items-center shadow-sm transition-all active:scale-95">
+                <span>Add Appointment</span>
+                <i class="fa-solid fa-plus ml-1.5 text-xs"></i>
+            </button>
+
+            <!-- Doctor Profile Dropdown -->
+            <div class="flex items-center space-x-2 cursor-pointer pl-2 border-l border-gray-200">
+                <img src="https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=120" 
+                    alt="Dr. Shreya Alandkar" class="w-8 h-8 rounded-full object-cover border border-gray-300">
+                <i class="fa-solid fa-chevron-down text-gray-400 text-xs"></i>
+            </div>
+        </div>
+    </header>
+
+    <!-- VIEW 1: MAIN DASHBOARD VIEW -->
+    <div id="dashboardView" class="flex flex-1 overflow-hidden">
+
+        <!-- Left Icon Sidebar -->
+        <aside class="w-14 bg-white border-r border-gray-200 flex flex-col items-center py-4 justify-between shrink-0 z-10">
+            <div class="flex flex-col items-center space-y-5 w-full">
+                <button id="nav-dashboard" onclick="showDashboard()" class="p-2.5 text-blue-600 bg-blue-50 rounded-xl w-10 h-10 flex items-center justify-center hover:bg-blue-100 transition" title="Dashboard">
+                    <i class="fa-solid fa-border-all text-base"></i>
+                </button>
+                <button class="p-2.5 text-gray-500 hover:text-blue-600 hover:bg-gray-100 rounded-xl w-10 h-10 flex items-center justify-center transition" title="Calendar">
+                    <i class="fa-regular fa-calendar-days text-base"></i>
+                </button>
+                <button onclick="openModal('addAppointmentModal')" class="p-2.5 text-gray-500 hover:text-blue-600 hover:bg-gray-100 rounded-xl w-10 h-10 flex items-center justify-center transition" title="Add Patient">
+                    <i class="fa-solid fa-user-plus text-base"></i>
+                </button>
+                <button class="p-2.5 text-gray-500 hover:text-blue-600 hover:bg-gray-100 rounded-xl w-10 h-10 flex items-center justify-center transition" title="Patients List">
+                    <i class="fa-solid fa-user-group text-base"></i>
+                </button>
+                <button class="p-2.5 text-gray-500 hover:text-blue-600 hover:bg-gray-100 rounded-xl w-10 h-10 flex items-center justify-center transition" title="EHR / Clinical Records">
+                    <i class="fa-solid fa-file-medical text-base"></i>
+                </button>
+                <button id="nav-ipd" onclick="showIPDView()" class="p-2.5 text-gray-500 hover:text-blue-600 hover:bg-gray-100 rounded-xl w-10 h-10 flex items-center justify-center transition" title="IPD (Inpatient Department)">
+                    <i class="fa-solid fa-bed-pulse text-base"></i>
+                </button>
+                <button class="p-2.5 text-gray-500 hover:text-blue-600 hover:bg-gray-100 rounded-xl w-10 h-10 flex items-center justify-center transition" title="Billing & Invoices">
+                    <i class="fa-solid fa-receipt text-base"></i>
+                </button>
+            </div>
+            <div class="flex flex-col items-center">
+                <button class="w-8 h-8 rounded-full bg-amber-50 border border-amber-200 text-amber-700 flex items-center justify-center text-xs font-bold" title="Official Rx / Emblem">
+                    <i class="fa-solid fa-prescription"></i>
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Workspace -->
+        <main id="outpatientMain" class="flex-1 overflow-y-auto custom-scrollbar p-6 bg-gray-50">
+
+            <!-- Greeting Header -->
+            <div class="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-800 tracking-tight">Good Afternoon, Dr. Rutuja & Rajkumar Salunke</h1>
+                    <button onclick="toggleSummary()" class="mt-1 inline-flex items-center text-xs text-blue-600 hover:text-blue-800 font-medium group">
+                        <span>View Summary</span>
+                        <i id="summaryChevron" class="fa-solid fa-chevron-down ml-1 text-[10px] transition-transform duration-200"></i>
+                    </button>
+                </div>
+
+                <!-- Date Switcher -->
+                <div class="flex items-center space-x-2 bg-white px-3 py-1.5 rounded-lg border border-gray-200 shadow-sm self-start md:self-auto">
+                    <button onclick="changeDate(-1)" class="p-1 hover:bg-gray-100 rounded text-gray-500 hover:text-gray-700">
+                        <i class="fa-solid fa-chevron-left text-xs"></i>
+                    </button>
+                    <div class="flex items-center space-x-2 text-xs font-medium text-gray-700 px-1">
+                        <i class="fa-regular fa-calendar text-gray-400"></i>
+                        <span id="currentDateDisplay">July 30, 2026</span>
+                    </div>
+                    <button onclick="changeDate(1)" class="p-1 hover:bg-gray-100 rounded text-gray-500 hover:text-gray-700">
+                        <i class="fa-solid fa-chevron-right text-xs"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Summary Stats Card Box -->
+            <div id="summaryBox" class="hidden mb-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 transition-all duration-300">
+                <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex items-center justify-between">
+                    <div>
+                        <p class="text-xs text-gray-500 font-medium">Total Consultations</p>
+                        <p class="text-xl font-bold text-gray-800 mt-1" id="statTotal">2</p>
+                    </div>
+                    <div class="w-10 h-10 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center">
+                        <i class="fa-solid fa-stethoscope"></i>
+                    </div>
+                </div>
+
+                <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex items-center justify-between">
+                    <div>
+                        <p class="text-xs text-gray-500 font-medium">Completed Today</p>
+                        <p class="text-xl font-bold text-emerald-600 mt-1" id="statCompleted">2</p>
+                    </div>
+                    <div class="w-10 h-10 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                        <i class="fa-solid fa-circle-check"></i>
+                    </div>
+                </div>
+
+                <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex items-center justify-between">
+                    <div>
+                        <p class="text-xs text-gray-500 font-medium">Patients Waiting</p>
+                        <p class="text-xl font-bold text-amber-600 mt-1" id="statWaiting">0</p>
+                    </div>
+                    <div class="w-10 h-10 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center">
+                        <i class="fa-solid fa-user-clock"></i>
+                    </div>
+                </div>
+
+                <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex items-center justify-between">
+                    <div>
+                        <p class="text-xs text-gray-500 font-medium">Estimated Revenue</p>
+                        <p class="text-xl font-bold text-gray-800 mt-1" id="statRevenue">₹ 1,000</p>
+                    </div>
+                    <div class="w-10 h-10 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center">
+                        <i class="fa-solid fa-indian-rupee-sign"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tabs Navigation -->
+            <div class="border-b border-gray-200 mb-4 overflow-x-auto custom-scrollbar">
+                <nav class="flex space-x-6 min-w-max" aria-label="Tabs">
+                    <button onclick="setActiveTab('All Appointments')" id="tab-All Appointments" 
+                        class="tab-btn pb-3 px-1 border-b-2 border-blue-600 font-semibold text-blue-600 text-xs flex items-center space-x-1 transition-all">
+                        <span>All Appointments</span>
+                        <span id="badge-all" class="ml-1 text-[11px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded-full font-medium">(2)</span>
+                    </button>
+
+                    <button onclick="setActiveTab('Waiting In Clinic')" id="tab-Waiting In Clinic" 
+                        class="tab-btn pb-3 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-700 font-medium text-xs flex items-center space-x-1 transition-all">
+                        <span>Waiting In Clinic</span>
+                        <span id="badge-waiting" class="ml-1 text-[11px] text-gray-400">(0)</span>
+                    </button>
+
+                    <button onclick="setActiveTab('Scheduled')" id="tab-Scheduled" 
+                        class="tab-btn pb-3 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-700 font-medium text-xs flex items-center space-x-1 transition-all">
+                        <span>Scheduled</span>
+                        <span id="badge-scheduled" class="ml-1 text-[11px] text-gray-400">(0)</span>
+                    </button>
+
+                    <button onclick="setActiveTab('Active')" id="tab-Active" 
+                        class="tab-btn pb-3 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-700 font-medium text-xs flex items-center space-x-1 transition-all">
+                        <span>Active</span>
+                        <span id="badge-active" class="ml-1 text-[11px] text-gray-400">(0)</span>
+                    </button>
+
+                    <button onclick="setActiveTab('Completed')" id="tab-Completed" 
+                        class="tab-btn pb-3 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-700 font-medium text-xs flex items-center space-x-1 transition-all">
+                        <span>Completed</span>
+                        <span id="badge-completed" class="ml-1 text-[11px] text-gray-400">(2)</span>
+                    </button>
+
+                    <button onclick="setActiveTab('Cancelled')" id="tab-Cancelled" 
+                        class="tab-btn pb-3 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-700 font-medium text-xs flex items-center space-x-1 transition-all">
+                        <span>Cancelled</span>
+                        <span id="badge-cancelled" class="ml-1 text-[11px] text-gray-400">(0)</span>
+                    </button>
+                </nav>
+            </div>
+
+            <!-- Appointments Table -->
+            <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="border-b border-gray-100 bg-gray-50/50 text-gray-500 text-xs font-semibold">
+                                <th class="py-3 px-6 w-1/3">
+                                    <button onclick="sortData('name')" class="flex items-center space-x-1 hover:text-gray-700 focus:outline-none">
+                                        <span>Patient Details</span>
+                                        <i class="fa-solid fa-arrows-up-down text-[10px] text-gray-400"></i>
+                                    </button>
+                                </th>
+                                <th class="py-3 px-6 w-1/3">
+                                    <button onclick="sortData('time')" class="flex items-center space-x-1 hover:text-gray-700 focus:outline-none">
+                                        <span>Time</span>
+                                        <i class="fa-solid fa-arrows-up-down text-[10px] text-gray-400"></i>
+                                    </button>
+                                </th>
+                                <th class="py-3 px-6 w-1/3 text-left">
+                                    <span>Actions</span>
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody id="appointmentsTableBody" class="divide-y divide-gray-100 text-xs">
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Empty State -->
+                <div id="emptyState" class="hidden p-12 text-center">
+                    <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto text-gray-400 text-xl mb-3">
+                        <i class="fa-regular fa-calendar-xmark"></i>
+                    </div>
+                    <p class="text-sm font-semibold text-gray-700">No appointments found</p>
+                    <p class="text-xs text-gray-400 mt-1">Try changing your filters or add a new patient appointment.</p>
+                </div>
+            </div>
+
+        </main>
+
+        <!-- IPD Workspace (Hidden by Default) -->
+        <main id="ipdMain" class="hidden flex-1 overflow-y-auto custom-scrollbar p-6 bg-gray-50">
+            <!-- IPD Header -->
+            <div class="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-800 tracking-tight">IPD Management</h1>
+                    <p class="text-xs text-gray-500 mt-1 font-medium">Overview of admitted patients and stay durations</p>
+                </div>
+                <div class="flex space-x-3">
+                    <button class="bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 px-4 py-1.5 rounded-lg text-xs font-medium flex items-center shadow-sm transition-all">
+                        <i class="fa-solid fa-bed mr-1.5 text-gray-400"></i>
+                        <span>Bed Allocation</span>
+                    </button>
+                    <button class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-1.5 rounded-lg text-xs font-medium flex items-center shadow-sm transition-all active:scale-95">
+                        <span>Admit Patient</span>
+                        <i class="fa-solid fa-plus ml-1.5 text-xs"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- IPD Summary Stats -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex items-center justify-between border-l-4 border-l-blue-500">
+                    <div>
+                        <p class="text-xs text-gray-500 font-medium">Total Admitted</p>
+                        <p class="text-xl font-bold text-gray-800 mt-1" id="statIpdTotal">0</p>
+                    </div>
+                    <div class="w-10 h-10 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center">
+                        <i class="fa-solid fa-hospital-user"></i>
+                    </div>
+                </div>
+
+                <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex items-center justify-between">
+                    <div>
+                        <p class="text-xs text-gray-500 font-medium">Average Stay</p>
+                        <p class="text-xl font-bold text-gray-800 mt-1" id="statIpdAvgStay">0 Days</p>
+                    </div>
+                    <div class="w-10 h-10 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center">
+                        <i class="fa-solid fa-stopwatch"></i>
+                    </div>
+                </div>
+
+                <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex items-center justify-between">
+                    <div>
+                        <p class="text-xs text-gray-500 font-medium">Available Beds</p>
+                        <p class="text-xl font-bold text-emerald-600 mt-1">14</p>
+                    </div>
+                    <div class="w-10 h-10 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                        <i class="fa-solid fa-bed"></i>
+                    </div>
+                </div>
+
+                <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex items-center justify-between">
+                    <div>
+                        <p class="text-xs text-gray-500 font-medium">Critical Care</p>
+                        <p class="text-xl font-bold text-red-600 mt-1" id="statIpdCritical">0</p>
+                    </div>
+                    <div class="w-10 h-10 rounded-full bg-red-50 text-red-500 flex items-center justify-center">
+                        <i class="fa-solid fa-heart-pulse"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- IPD Patients List -->
+            <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+                <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
+                    <h3 class="font-bold text-gray-800 text-sm">Admitted Patients</h3>
+                    <div class="relative w-48">
+                        <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-[10px]"></i>
+                        <input type="text" placeholder="Search IPD..." class="w-full pl-8 pr-3 py-1 border border-gray-200 rounded-md text-xs focus:ring-1 focus:ring-blue-500 focus:outline-none">
+                    </div>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="border-b border-gray-100 bg-gray-50/30 text-gray-500 text-xs font-semibold">
+                                <th class="py-3 px-6">Patient Name & ID</th>
+                                <th class="py-3 px-6">Ward / Bed No.</th>
+                                <th class="py-3 px-6">Admitted On & Stay</th>
+                                <th class="py-3 px-6">Diagnosis & Status</th>
+                                <th class="py-3 px-6 text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="ipdTableBody" class="divide-y divide-gray-100 text-xs">
+                            <!-- IPD Rows Injected Here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- VIEW 2: CLINICAL CONSULTATION / CREATE NEW PRESCRIPTION VIEW -->
+    <div id="consultationView" class="hidden flex-1 overflow-hidden flex flex-col bg-slate-50">
+        
+        <!-- Consultation Patient Info Ribbon Bar -->
+        <div class="bg-white border-b border-gray-200 px-6 py-2.5 flex items-center justify-between shrink-0 shadow-xs">
+            <div class="flex items-center space-x-4">
+                <button onclick="showDashboard()" class="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-gray-100 rounded-lg transition" title="Back to Dashboard">
+                    <i class="fa-solid fa-arrow-left text-sm"></i>
+                </button>
+                <div class="flex items-center space-x-3">
+                    <div class="w-8 h-8 rounded-full bg-blue-100 text-blue-700 font-bold flex items-center justify-center text-xs" id="activePatientInitials">
+                        AD
+                    </div>
+                    <div>
+                        <div class="flex items-center space-x-2">
+                            <span class="font-bold text-gray-800 text-sm" id="activePatientName">ad adz</span>
+                            <span class="text-xs px-2 py-0.5 rounded bg-blue-50 text-blue-600 font-medium" id="activePatientUHID">UH2026073001</span>
+                        </div>
+                        <p class="text-[11px] text-gray-500" id="activePatientMeta">Male | 12 Years | Mobile: +91 9876543210</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Top Tab Bar: Create New Prescription | Medical Background | Past Visits -->
+            <div class="flex items-center space-x-8 border-b-2 border-transparent">
+                <button class="py-2 text-xs font-bold text-blue-700 border-b-2 border-blue-600 flex items-center space-x-1.5">
+                    <i class="fa-solid fa-file-signature"></i>
+                    <span>Create New Prescription</span>
+                </button>
+                <button class="py-2 text-xs font-medium text-gray-500 hover:text-gray-800 flex items-center space-x-1.5">
+                    <i class="fa-solid fa-clock-rotate-left"></i>
+                    <span>Medical Background</span>
+                </button>
+                <button class="py-2 text-xs font-medium text-gray-500 hover:text-gray-800 flex items-center space-x-1.5">
+                    <i class="fa-regular fa-folder-open"></i>
+                    <span>Past Visits</span>
+                </button>
+            </div>
+
+            <!-- Action Gear Icon -->
+            <button class="text-gray-400 hover:text-gray-600 p-2">
+                <i class="fa-solid fa-gear"></i>
+            </button>
+        </div>
+
+        <!-- Consultation Content Body -->
+        <div class="flex flex-1 overflow-hidden">
+            
+            <!-- Prescription Left Sub-Sidebar (Icons for Rx Sections) -->
+            <div class="w-12 bg-white border-r border-gray-200 flex flex-col items-center py-4 space-y-4 shrink-0 text-gray-400 text-base">
+                <button onclick="scrollToRxSection('sec-complaints')" class="p-2 text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100" title="Chief Complaints">
+                    <i class="fa-solid fa-clipboard-list text-sm"></i>
+                </button>
+                <button onclick="scrollToRxSection('sec-vitals')" class="p-2 hover:text-blue-600 hover:bg-gray-100 rounded-lg" title="Examinations / Vitals">
+                    <i class="fa-solid fa-stethoscope text-sm"></i>
+                </button>
+                <button onclick="scrollToRxSection('sec-medication')" class="p-2 hover:text-blue-600 hover:bg-gray-100 rounded-lg" title="Medication / Rx">
+                    <i class="fa-solid fa-pills text-sm"></i>
+                </button>
+                <button onclick="scrollToRxSection('sec-procedures')" class="p-2 hover:text-blue-600 hover:bg-gray-100 rounded-lg" title="Procedures">
+                    <i class="fa-solid fa-syringe text-sm"></i>
+                </button>
+                <button onclick="scrollToRxSection('sec-investigation')" class="p-2 hover:text-blue-600 hover:bg-gray-100 rounded-lg" title="Investigation / Tests">
+                    <i class="fa-solid fa-eye text-sm"></i>
+                </button>
+                <button onclick="scrollToRxSection('sec-advice')" class="p-2 hover:text-blue-600 hover:bg-gray-100 rounded-lg" title="Advice & Instructions">
+                    <i class="fa-solid fa-file-pen text-sm"></i>
+                </button>
+                <button onclick="scrollToRxSection('sec-attachments')" class="p-2 hover:text-blue-600 hover:bg-gray-100 rounded-lg" title="Attachments">
+                    <i class="fa-solid fa-paperclip text-sm"></i>
+                </button>
+            </div>
+
+            <!-- Scrollable Clinical Form Workspace -->
+            <div id="clinicalWorkspace" class="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-6">
+                
+                <!-- SECTION 1: Chief Complaints -->
+                <div id="sec-complaints" class="bg-white rounded-xl border border-gray-200 shadow-xs p-5">
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="text-sm font-bold text-gray-800 flex items-center space-x-2">
+                            <span>Chief Complaints</span>
+                        </h2>
+                        <div class="relative w-56">
+                            <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-[10px]"></i>
+                            <input type="text" placeholder="Search Templates" class="w-full pl-8 pr-3 py-1 border border-gray-200 rounded-md text-xs focus:ring-1 focus:ring-blue-500 focus:outline-none">
+                        </div>
+                    </div>
+
+                    <!-- Complaints Inputs Header Grid -->
+                    <div class="grid grid-cols-1 md:grid-cols-12 gap-3 mb-4 bg-gray-50/70 p-3 rounded-lg border border-gray-100 text-xs">
+                        <div class="md:col-span-5">
+                            <label class="block text-[11px] font-semibold text-gray-500 mb-1">Name</label>
+                            <input type="text" id="complaintInputName" placeholder="+ Add chief complaints" 
+                                class="w-full px-3 py-1.5 border border-gray-200 rounded-lg bg-white text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                        </div>
+                        <div class="md:col-span-3">
+                            <label class="block text-[11px] font-semibold text-gray-500 mb-1">Severity</label>
+                            <select id="complaintSeverity" class="w-full px-3 py-1.5 border border-gray-200 rounded-lg bg-white text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none text-gray-600">
+                                <option value="">eg. Mild</option>
+                                <option value="Mild">Mild</option>
+                                <option value="Moderate">Moderate</option>
+                                <option value="Severe">Severe</option>
+                            </select>
+                        </div>
+                        <div class="md:col-span-4">
+                            <label class="block text-[11px] font-semibold text-gray-500 mb-1">Since When</label>
+                            <div class="flex space-x-2">
+                                <input type="number" id="complaintDurationVal" value="2" min="1" class="w-1/2 px-3 py-1.5 border border-gray-200 rounded-lg bg-white text-xs text-center focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                                <select id="complaintDurationUnit" class="w-1/2 px-2 py-1.5 border border-gray-200 rounded-lg bg-white text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                                    <option value="Days">Days</option>
+                                    <option value="Weeks">Weeks</option>
+                                    <option value="Months">Months</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quick Complaint Chips -->
+                    <div class="space-y-2">
+                        <div class="flex flex-wrap gap-2 text-xs" id="chipsContainer">
+                            <button type="button" onclick="toggleChip(this, 'Vomiting')" class="chip-btn border border-gray-200 bg-gray-50 text-gray-700 px-3 py-1 rounded-full text-xs hover:bg-gray-100 flex items-center space-x-1">
+                                <i class="fa-solid fa-plus text-[10px] text-gray-400"></i>
+                                <span>Vomiting</span>
+                            </button>
+                            <button type="button" onclick="toggleChip(this, 'Headache')" class="chip-btn border border-gray-200 bg-gray-50 text-gray-700 px-3 py-1 rounded-full text-xs hover:bg-gray-100 flex items-center space-x-1">
+                                <i class="fa-solid fa-plus text-[10px] text-gray-400"></i>
+                                <span>Headache</span>
+                            </button>
+                            <button type="button" onclick="toggleChip(this, 'Cough')" class="chip-btn border border-gray-200 bg-gray-50 text-gray-700 px-3 py-1 rounded-full text-xs hover:bg-gray-100 flex items-center space-x-1">
+                                <i class="fa-solid fa-plus text-[10px] text-gray-400"></i>
+                                <span>Cough</span>
+                            </button>
+                            <button type="button" onclick="toggleChip(this, 'Cold')" class="chip-btn border border-gray-200 bg-gray-50 text-gray-700 px-3 py-1 rounded-full text-xs hover:bg-gray-100 flex items-center space-x-1">
+                                <i class="fa-solid fa-plus text-[10px] text-gray-400"></i>
+                                <span>Cold</span>
+                            </button>
+                            <button type="button" onclick="toggleChip(this, 'Fatigue')" class="chip-btn border border-gray-200 bg-gray-50 text-gray-700 px-3 py-1 rounded-full text-xs hover:bg-gray-100 flex items-center space-x-1">
+                                <i class="fa-solid fa-plus text-[10px] text-gray-400"></i>
+                                <span>Fatigue</span>
+                            </button>
+                            <button type="button" onclick="toggleChip(this, 'Nausea')" class="chip-btn border border-gray-200 bg-gray-50 text-gray-700 px-3 py-1 rounded-full text-xs hover:bg-gray-100 flex items-center space-x-1">
+                                <i class="fa-solid fa-plus text-[10px] text-gray-400"></i>
+                                <span>Nausea</span>
+                            </button>
+                            <button type="button" onclick="toggleChip(this, 'Common cold')" class="chip-btn border border-gray-200 bg-gray-50 text-gray-700 px-3 py-1 rounded-full text-xs hover:bg-gray-100 flex items-center space-x-1">
+                                <i class="fa-solid fa-plus text-[10px] text-gray-400"></i>
+                                <span>Common cold</span>
+                            </button>
+                            <button type="button" onclick="toggleChip(this, 'Sore throat')" class="chip-btn border border-gray-200 bg-gray-50 text-gray-700 px-3 py-1 rounded-full text-xs hover:bg-gray-100 flex items-center space-x-1">
+                                <i class="fa-solid fa-plus text-[10px] text-gray-400"></i>
+                                <span>Sore throat</span>
+                            </button>
+                            <button type="button" onclick="toggleChip(this, 'Weakness')" class="chip-btn border border-gray-200 bg-gray-50 text-gray-700 px-3 py-1 rounded-full text-xs hover:bg-gray-100 flex items-center space-x-1">
+                                <i class="fa-solid fa-plus text-[10px] text-gray-400"></i>
+                                <span>Weakness</span>
+                            </button>
+                            <button type="button" onclick="toggleChip(this, 'Generalized aches')" class="chip-btn border border-gray-200 bg-gray-50 text-gray-700 px-3 py-1 rounded-full text-xs hover:bg-gray-100 flex items-center space-x-1">
+                                <i class="fa-solid fa-plus text-[10px] text-gray-400"></i>
+                                <span>Generalized aches...</span>
+                            </button>
+                        </div>
+                        <button class="text-xs font-bold text-blue-600 hover:underline pt-1 inline-block">
+                            Show more
+                        </button>
+                    </div>
+                </div>
+
+                <!-- SECTION 2: Examinations / Vitals -->
+                <div id="sec-vitals" class="bg-white rounded-xl border border-gray-200 shadow-xs p-5">
+                    <h2 class="text-sm font-bold text-gray-800 mb-4">Examinations</h2>
+
+                    <!-- Vitals Controls Grid -->
+                    <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4 mb-5 text-xs">
+                        <div>
+                            <label class="block text-gray-500 font-medium mb-1">Temperature</label>
+                            <div class="flex">
+                                <input type="text" placeholder="98.6" class="w-full px-3 py-1.5 border border-r-0 border-gray-200 rounded-l-lg focus:ring-1 focus:ring-blue-500 focus:outline-none">
+                                <select class="px-1.5 border border-gray-200 bg-gray-50 rounded-r-lg text-gray-600 text-[11px]">
+                                    <option>°F</option>
+                                    <option>°C</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-gray-500 font-medium mb-1">Pulse</label>
+                            <div class="flex items-center">
+                                <input type="text" placeholder="72" class="w-full px-3 py-1.5 border border-r-0 border-gray-200 rounded-l-lg focus:ring-1 focus:ring-blue-500 focus:outline-none">
+                                <span class="px-2 py-1.5 border border-gray-200 bg-gray-50 rounded-r-lg text-gray-500 text-[11px]">bpm</span>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-gray-500 font-medium mb-1">Respiratory Rate</label>
+                            <div class="flex items-center">
+                                <input type="text" placeholder="18" class="w-full px-3 py-1.5 border border-r-0 border-gray-200 rounded-l-lg focus:ring-1 focus:ring-blue-500 focus:outline-none">
+                                <span class="px-2 py-1.5 border border-gray-200 bg-gray-50 rounded-r-lg text-gray-500 text-[11px]">rpm</span>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-gray-500 font-medium mb-1">BP</label>
+                            <div class="flex items-center">
+                                <input type="text" placeholder="120/80" class="w-full px-3 py-1.5 border border-r-0 border-gray-200 rounded-l-lg focus:ring-1 focus:ring-blue-500 focus:outline-none">
+                                <span class="px-2 py-1.5 border border-gray-200 bg-gray-50 rounded-r-lg text-gray-500 text-[11px]">mmHg</span>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-gray-500 font-medium mb-1">SPO2</label>
+                            <div class="flex items-center">
+                                <input type="text" placeholder="99" class="w-full px-3 py-1.5 border border-r-0 border-gray-200 rounded-l-lg focus:ring-1 focus:ring-blue-500 focus:outline-none">
+                                <span class="px-2 py-1.5 border border-gray-200 bg-gray-50 rounded-r-lg text-gray-500 text-[11px]">%</span>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-gray-500 font-medium mb-1">Height</label>
+                            <div class="flex">
+                                <input type="text" placeholder="150" class="w-full px-3 py-1.5 border border-r-0 border-gray-200 rounded-l-lg focus:ring-1 focus:ring-blue-500 focus:outline-none">
+                                <select class="px-1.5 border border-gray-200 bg-gray-50 rounded-r-lg text-gray-600 text-[11px]">
+                                    <option>cm</option>
+                                    <option>ft</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-gray-500 font-medium mb-1">Weight</label>
+                            <div class="flex">
+                                <input type="text" placeholder="42" class="w-full px-3 py-1.5 border border-r-0 border-gray-200 rounded-l-lg focus:ring-1 focus:ring-blue-500 focus:outline-none">
+                                <select class="px-1.5 border border-gray-200 bg-gray-50 rounded-r-lg text-gray-600 text-[11px]">
+                                    <option>kg</option>
+                                    <option>lbs</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Examination Notes Text area -->
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-600 mb-1.5">Examination Notes</label>
+                        <textarea rows="3" placeholder="Type your notes here..." 
+                            class="w-full p-3 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none resize-none"></textarea>
+                    </div>
+                </div>
+
+                <!-- SECTION 3: Medication -->
+                <div id="sec-medication" class="bg-white rounded-xl border border-gray-200 shadow-xs p-5">
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="text-sm font-bold text-gray-800">Medication</h2>
+                        <div class="relative w-56">
+                            <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-[10px]"></i>
+                            <input type="text" placeholder="Search Templates" class="w-full pl-8 pr-3 py-1 border border-gray-200 rounded-md text-xs focus:ring-1 focus:ring-blue-500 focus:outline-none">
+                        </div>
+                    </div>
+
+                    <!-- Medication Input Fields -->
+                    <div class="grid grid-cols-1 md:grid-cols-12 gap-3 mb-4 bg-gray-50/70 p-3 rounded-lg border border-gray-100 text-xs">
+                        <div class="md:col-span-4">
+                            <label class="block text-[11px] font-semibold text-gray-500 mb-1">Prescribed Medicine</label>
+                            <input type="text" id="medicineInputName" placeholder="+ Add Medicine" 
+                                class="w-full px-3 py-1.5 border border-gray-200 rounded-lg bg-white text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                        </div>
+
+                        <div class="md:col-span-2">
+                            <label class="block text-[11px] font-semibold text-gray-500 mb-1 flex items-center justify-between">
+                                <span>Dosage</span>
+                                <i class="fa-regular fa-eye text-gray-400 text-[10px]"></i>
+                            </label>
+                            <div class="flex">
+                                <input type="number" id="medicineDosage" value="3" min="1" class="w-1/2 px-2 py-1.5 border border-r-0 border-gray-200 rounded-l-lg bg-white text-xs text-center focus:outline-none">
+                                <select id="medicineUnit" class="w-1/2 px-1 py-1.5 border border-gray-200 bg-white rounded-r-lg text-xs text-gray-600 focus:outline-none">
+                                    <option value="Tab">Tab</option>
+                                    <option value="Cap">Cap</option>
+                                    <option value="Syr">Syr</option>
+                                    <option value="Inj">Inj</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="md:col-span-2">
+                            <label class="block text-[11px] font-semibold text-gray-500 mb-1">Frequency</label>
+                            <input type="text" id="medicineFreq" placeholder="Eg. 1 - 0 - 1" 
+                                class="w-full px-3 py-1.5 border border-gray-200 rounded-lg bg-white text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                        </div>
+
+                        <div class="md:col-span-2">
+                            <label class="block text-[11px] font-semibold text-gray-500 mb-1">Timing</label>
+                            <input type="text" id="medicineTiming" placeholder="Eg. After meal" 
+                                class="w-full px-3 py-1.5 border border-gray-200 rounded-lg bg-white text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                        </div>
+
+                        <div class="md:col-span-2">
+                            <label class="block text-[11px] font-semibold text-gray-500 mb-1">Duration</label>
+                            <div class="flex">
+                                <input type="number" id="medicineDuration" value="3" min="1" class="w-1/2 px-2 py-1.5 border border-r-0 border-gray-200 rounded-l-lg bg-white text-xs text-center focus:outline-none">
+                                <select id="medicineDurationUnit" class="w-1/2 px-1 py-1.5 border border-gray-200 bg-white rounded-r-lg text-xs text-gray-600 focus:outline-none">
+                                    <option value="Days">Days</option>
+                                    <option value="Weeks">Weeks</option>
+                                    <option value="Months">Months</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Medicine Chips -->
+                    <div class="space-y-2">
+                        <div class="flex flex-wrap gap-2 text-xs">
+                            <button type="button" onclick="selectMedicineChip('SPECIFIX 200')" class="chip-btn border border-gray-200 bg-gray-50 text-gray-700 px-3 py-1 rounded-full text-xs hover:bg-gray-100 flex items-center space-x-1">
+                                <i class="fa-solid fa-plus text-[10px] text-gray-400"></i>
+                                <span>SPECIFIX 200</span>
+                            </button>
+                            <button type="button" onclick="selectMedicineChip('DOLO 650MG TAB')" class="chip-btn border border-gray-200 bg-gray-50 text-gray-700 px-3 py-1 rounded-full text-xs hover:bg-gray-100 flex items-center space-x-1">
+                                <i class="fa-solid fa-plus text-[10px] text-gray-400"></i>
+                                <span>DOLO 650MG TAB</span>
+                            </button>
+                            <button type="button" onclick="selectMedicineChip('PAN D CAP')" class="chip-btn border border-gray-200 bg-gray-50 text-gray-700 px-3 py-1 rounded-full text-xs hover:bg-gray-100 flex items-center space-x-1">
+                                <i class="fa-solid fa-plus text-[10px] text-gray-400"></i>
+                                <span>PAN D CAP</span>
+                            </button>
+                            <button type="button" onclick="selectMedicineChip('CALPOL 500MG TABLET')" class="chip-btn border border-gray-200 bg-gray-50 text-gray-700 px-3 py-1 rounded-full text-xs hover:bg-gray-100 flex items-center space-x-1">
+                                <i class="fa-solid fa-plus text-[10px] text-gray-400"></i>
+                                <span>CALPOL 500MG TABLET</span>
+                            </button>
+                            <button type="button" onclick="selectMedicineChip('AZ AMAZING')" class="chip-btn border border-gray-200 bg-gray-50 text-gray-700 px-3 py-1 rounded-full text-xs hover:bg-gray-100 flex items-center space-x-1">
+                                <i class="fa-solid fa-plus text-[10px] text-gray-400"></i>
+                                <span>AZ AMAZING</span>
+                            </button>
+                            <button type="button" onclick="selectMedicineChip('TANU 100')" class="chip-btn border border-gray-200 bg-gray-50 text-gray-700 px-3 py-1 rounded-full text-xs hover:bg-gray-100 flex items-center space-x-1">
+                                <i class="fa-solid fa-plus text-[10px] text-gray-400"></i>
+                                <span>TANU 100</span>
+                            </button>
+                            <button type="button" onclick="selectMedicineChip('PCM 650MG TAB')" class="chip-btn border border-gray-200 bg-gray-50 text-gray-700 px-3 py-1 rounded-full text-xs hover:bg-gray-100 flex items-center space-x-1">
+                                <i class="fa-solid fa-plus text-[10px] text-gray-400"></i>
+                                <span>PCM 650MG TAB</span>
+                            </button>
+                        </div>
+                        <button class="text-xs font-bold text-blue-600 hover:underline pt-1 inline-block">
+                            Show more
+                        </button>
+                    </div>
+                </div>
+
+                <!-- SECTION 4: Procedures -->
+                <div id="sec-procedures" class="bg-white rounded-xl border border-gray-200 shadow-xs p-5">
+                    <h2 class="text-sm font-bold text-gray-800 mb-4">Procedures</h2>
+
+                    <div class="grid grid-cols-1 md:grid-cols-12 gap-3 bg-gray-50/70 p-3 rounded-lg border border-gray-100 text-xs">
+                        <div class="md:col-span-4">
+                            <label class="block text-[11px] font-semibold text-gray-500 mb-1">Name of Procedure</label>
+                            <input type="text" placeholder="+ Add procedure" 
+                                class="w-full px-3 py-1.5 border border-gray-200 rounded-lg bg-white text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                        </div>
+
+                        <div class="md:col-span-3">
+                            <label class="block text-[11px] font-semibold text-gray-500 mb-1 flex items-center justify-between">
+                                <span>Procedure Details</span>
+                                <i class="fa-regular fa-eye text-gray-400 text-[10px]"></i>
+                            </label>
+                            <input type="text" placeholder="Details of the procedure" 
+                                class="w-full px-3 py-1.5 border border-gray-200 rounded-lg bg-white text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                        </div>
+
+                        <div class="md:col-span-3">
+                            <label class="block text-[11px] font-semibold text-gray-500 mb-1 flex items-center justify-between">
+                                <span>Procedure Date</span>
+                                <i class="fa-regular fa-eye text-gray-400 text-[10px]"></i>
+                            </label>
+                            <div class="relative">
+                                <input type="text" placeholder="Eg. 12 June 2022" 
+                                    class="w-full px-3 py-1.5 border border-gray-200 rounded-lg bg-white text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none pr-7">
+                                <i class="fa-regular fa-calendar absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 text-xs"></i>
+                            </div>
+                        </div>
+
+                        <div class="md:col-span-2">
+                            <label class="block text-[11px] font-semibold text-gray-500 mb-1 flex items-center justify-between">
+                                <span>Procedure Price</span>
+                                <i class="fa-regular fa-eye text-gray-400 text-[10px]"></i>
+                            </label>
+                            <div class="relative">
+                                <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 font-semibold text-xs">₹</span>
+                                <input type="text" placeholder="5000" 
+                                    class="w-full pl-7 pr-3 py-1.5 border border-gray-200 rounded-lg bg-white text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SECTION 5: Investigation -->
+                <div id="sec-investigation" class="bg-white rounded-xl border border-gray-200 shadow-xs p-5">
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="text-sm font-bold text-gray-800">Investigation</h2>
+                        <div class="relative w-56">
+                            <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-[10px]"></i>
+                            <input type="text" placeholder="Search Templates" class="w-full pl-8 pr-3 py-1 border border-gray-200 rounded-md text-xs focus:ring-1 focus:ring-blue-500 focus:outline-none">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-12 gap-3 mb-4 bg-gray-50/70 p-3 rounded-lg border border-gray-100 text-xs">
+                        <div class="md:col-span-6">
+                            <label class="block text-[11px] font-semibold text-gray-500 mb-1">Tests prescribed</label>
+                            <input type="text" id="investigationTestInput" placeholder="Add Test Name" 
+                                class="w-full px-3 py-1.5 border border-gray-200 rounded-lg bg-white text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                        </div>
+
+                        <div class="md:col-span-6">
+                            <label class="block text-[11px] font-semibold text-gray-500 mb-1">Instructions</label>
+                            <input type="text" placeholder="Enter instructions here" 
+                                class="w-full px-3 py-1.5 border border-gray-200 rounded-lg bg-white text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                        </div>
+                    </div>
+
+                    <!-- Lab Test Chips -->
+                    <div class="space-y-2">
+                        <div class="flex flex-wrap gap-2 text-xs">
+                            <button type="button" onclick="selectTestChip('Cbc')" class="chip-btn border border-gray-200 bg-gray-50 text-gray-700 px-3 py-1 rounded-full text-xs hover:bg-gray-100 flex items-center space-x-1">
+                                <i class="fa-solid fa-plus text-[10px] text-gray-400"></i>
+                                <span>Cbc</span>
+                            </button>
+                            <button type="button" onclick="selectTestChip('Crp')" class="chip-btn border border-gray-200 bg-gray-50 text-gray-700 px-3 py-1 rounded-full text-xs hover:bg-gray-100 flex items-center space-x-1">
+                                <i class="fa-solid fa-plus text-[10px] text-gray-400"></i>
+                                <span>Crp</span>
+                            </button>
+                            <button type="button" onclick="selectTestChip('Lft')" class="chip-btn border border-gray-200 bg-gray-50 text-gray-700 px-3 py-1 rounded-full text-xs hover:bg-gray-100 flex items-center space-x-1">
+                                <i class="fa-solid fa-plus text-[10px] text-gray-400"></i>
+                                <span>Lft</span>
+                            </button>
+                            <button type="button" onclick="selectTestChip('Kft')" class="chip-btn border border-gray-200 bg-gray-50 text-gray-700 px-3 py-1 rounded-full text-xs hover:bg-gray-100 flex items-center space-x-1">
+                                <i class="fa-solid fa-plus text-[10px] text-gray-400"></i>
+                                <span>Kft</span>
+                            </button>
+                            <button type="button" onclick="selectTestChip('Serum calcium')" class="chip-btn border border-gray-200 bg-gray-50 text-gray-700 px-3 py-1 rounded-full text-xs hover:bg-gray-100 flex items-center space-x-1">
+                                <i class="fa-solid fa-plus text-[10px] text-gray-400"></i>
+                                <span>Serum calcium</span>
+                            </button>
+                            <button type="button" onclick="selectTestChip('Hba1c')" class="chip-btn border border-gray-200 bg-gray-50 text-gray-700 px-3 py-1 rounded-full text-xs hover:bg-gray-100 flex items-center space-x-1">
+                                <i class="fa-solid fa-plus text-[10px] text-gray-400"></i>
+                                <span>Hba1c</span>
+                            </button>
+                            <button type="button" onclick="selectTestChip('Rtpcr')" class="chip-btn border border-gray-200 bg-gray-50 text-gray-700 px-3 py-1 rounded-full text-xs hover:bg-gray-100 flex items-center space-x-1">
+                                <i class="fa-solid fa-plus text-[10px] text-gray-400"></i>
+                                <span>Rtpcr</span>
+                            </button>
+                            <button type="button" onclick="selectTestChip('Vitamin b12')" class="chip-btn border border-gray-200 bg-gray-50 text-gray-700 px-3 py-1 rounded-full text-xs hover:bg-gray-100 flex items-center space-x-1">
+                                <i class="fa-solid fa-plus text-[10px] text-gray-400"></i>
+                                <span>Vitamin b12</span>
+                            </button>
+                            <button type="button" onclick="selectTestChip('Ecg')" class="chip-btn border border-gray-200 bg-gray-50 text-gray-700 px-3 py-1 rounded-full text-xs hover:bg-gray-100 flex items-center space-x-1">
+                                <i class="fa-solid fa-plus text-[10px] text-gray-400"></i>
+                                <span>Ecg</span>
+                            </button>
+                            <button type="button" onclick="selectTestChip('Vitamin d3')" class="chip-btn border border-gray-200 bg-gray-50 text-gray-700 px-3 py-1 rounded-full text-xs hover:bg-gray-100 flex items-center space-x-1">
+                                <i class="fa-solid fa-plus text-[10px] text-gray-400"></i>
+                                <span>Vitamin d3</span>
+                            </button>
+                        </div>
+                        <button class="text-xs font-bold text-blue-600 hover:underline pt-1 inline-block">
+                            Show more
+                        </button>
+                    </div>
+                </div>
+
+                <!-- SECTION 6: Advice -->
+                <div id="sec-advice" class="bg-white rounded-xl border border-gray-200 shadow-xs p-5">
+                    <h2 class="text-sm font-bold text-gray-800 mb-3">Advice</h2>
+                    <textarea rows="3" placeholder="+ Add Advice here" 
+                        class="w-full p-3 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none resize-none bg-gray-50/50"></textarea>
+                </div>
+
+                <!-- SECTION 7: Attachments -->
+                <div id="sec-attachments" class="bg-white rounded-xl border border-gray-200 shadow-xs p-5">
+                    <div class="flex flex-wrap items-center space-x-3 mb-3">
+                        <h2 class="text-sm font-bold text-gray-800">Attachments</h2>
+                        <span class="bg-amber-100/80 text-amber-800 px-2.5 py-0.5 rounded-full text-[11px] font-medium">
+                            You can upload a maximum of 5 files of 5 mb each
+                        </span>
+                        <span class="text-[11px] text-gray-400">
+                            (Acceptable formats: jpeg, png and pdf)
+                        </span>
+                    </div>
+
+                    <div class="border-2 border-dashed border-gray-200 hover:border-blue-400 rounded-xl p-6 text-center cursor-pointer transition-colors bg-gray-50/30">
+                        <i class="fa-solid fa-cloud-arrow-up text-blue-500 text-2xl mb-2"></i>
+                        <p class="text-xs font-semibold text-gray-700">Click to upload or drag files here</p>
+                        <p class="text-[11px] text-gray-400 mt-0.5">Supports PDF, PNG, JPG (Max 5MB each)</p>
+                        <input type="file" multiple class="hidden" id="fileUploadInput">
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Consultation Sticky Bottom Action Bar -->
+        <div class="bg-white border-t border-gray-200 px-6 py-3 flex flex-col sm:flex-row items-center justify-between gap-3 shrink-0">
+            <div class="flex items-center space-x-6 text-xs text-blue-600 font-medium">
+                <button class="hover:underline flex items-center space-x-1">
+                    <i class="fa-regular fa-bookmark"></i>
+                    <span>Save prescription as template</span>
+                </button>
+                <button class="hover:underline flex items-center space-x-1 text-gray-600">
+                    <i class="fa-regular fa-sticky-note"></i>
+                    <span>Private Notes</span>
+                </button>
+            </div>
+
+            <div class="flex items-center space-x-4">
+                <label class="inline-flex items-center space-x-2 text-xs text-gray-700 cursor-pointer">
+                    <input type="checkbox" checked class="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500">
+                    <span>Share prescription with patient</span>
+                </label>
+
+                <button onclick="previewPrescriptionModal()" class="px-4 py-2 text-xs font-bold text-blue-600 border border-blue-600 hover:bg-blue-50 rounded-lg transition">
+                    Preview Prescription
+                </button>
+
+                <button onclick="endConsultation()" class="px-5 py-2 text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow-sm transition">
+                    End Consultation
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Floating Action Button -->
+    <button onclick="openModal('addAppointmentModal')" id="fabButton"
+        class="fixed bottom-6 right-6 w-12 h-12 bg-blue-600 hover:bg-blue-700 text-white rounded-full shadow-lg flex items-center justify-center text-lg transition-transform hover:scale-105 active:scale-95 z-30" 
+        title="Quick Add Appointment">
+        <i class="fa-solid fa-plus"></i>
+    </button>
+
+    <!-- Side Drawer: Add Appointment Panel -->
+    <div id="addAppointmentModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 hidden transition-all duration-300">
+        <div class="fixed inset-y-0 right-0 w-full max-w-xl bg-white shadow-2xl flex flex-col justify-between custom-scrollbar overflow-y-auto">
+            
+            <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between sticky top-0 bg-white z-10">
+                <h2 class="text-base font-bold text-gray-800">Add Appointment</h2>
+                <button onclick="closeModal('addAppointmentModal')" class="text-gray-400 hover:text-gray-600 p-1.5 rounded-lg hover:bg-gray-100 transition">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <form id="appointmentForm" onsubmit="handleAddAppointment(event)" class="p-6 space-y-6 flex-1">
+                <div>
+                    <h3 class="text-xs font-bold text-gray-800 uppercase tracking-wider border-b border-gray-100 pb-2 mb-4">
+                        Patient Details
+                    </h3>
+
+                    <div class="space-y-4">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-600 mb-1">First Name*</label>
+                                <input type="text" id="modalFirstName" required placeholder="First Name*" 
+                                    class="w-full px-3.5 py-2 border border-blue-500 rounded-lg text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-600 mb-1">Last Name</label>
+                                <input type="text" id="modalLastName" placeholder="Last Name" 
+                                    class="w-full px-3.5 py-2 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all">
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-600 mb-1">Date of Birth</label>
+                                <div class="relative">
+                                    <input type="text" id="modalDob" placeholder="dd/mm/yy" 
+                                        class="w-full px-3.5 py-2 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none pr-8">
+                                    <i class="fa-regular fa-calendar absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs"></i>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="flex items-center justify-between mb-1">
+                                    <span class="text-[11px] text-gray-400 font-medium">or</span>
+                                    <label class="text-xs font-semibold text-gray-600">Age</label>
+                                </div>
+                                <div class="flex space-x-2">
+                                    <input type="number" id="modalAge" placeholder="12" min="1" max="120" value="12" 
+                                        class="w-1/2 px-3.5 py-2 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                                    <select id="modalAgeUnit" class="w-1/2 px-3 py-2 border border-gray-200 rounded-lg text-xs bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                                        <option value="Years">Years</option>
+                                        <option value="Months">Months</option>
+                                        <option value="Days">Days</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-600 mb-1.5">Gender</label>
+                            <div class="flex space-x-3">
+                                <button type="button" onclick="selectGender('M')" id="gender-M" 
+                                    class="gender-btn px-6 py-1.5 rounded-lg text-xs font-medium border border-blue-600 bg-blue-50 text-blue-700 transition-all">
+                                    Male
+                                </button>
+                                <button type="button" onclick="selectGender('F')" id="gender-F" 
+                                    class="gender-btn px-6 py-1.5 rounded-lg text-xs font-medium border border-gray-200 bg-white text-gray-600 hover:bg-gray-50 transition-all">
+                                    Female
+                                </button>
+                                <button type="button" onclick="selectGender('O')" id="gender-O" 
+                                    class="gender-btn px-6 py-1.5 rounded-lg text-xs font-medium border border-gray-200 bg-white text-gray-600 hover:bg-gray-50 transition-all">
+                                    Other
+                                </button>
+                            </div>
+                            <input type="hidden" id="modalGender" value="M">
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-600 mb-1">Reason for visit</label>
+                            <input type="text" id="modalReason" placeholder="Reason for visit" 
+                                class="w-full px-3.5 py-2 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all">
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-600 mb-1">Mobile Number</label>
+                            <div class="flex space-x-2">
+                                <span class="px-3 py-2 bg-gray-100 border border-gray-200 rounded-lg text-xs font-medium text-gray-600 flex items-center">+91</span>
+                                <input type="tel" id="modalMobile" placeholder="Mobile Number" 
+                                    class="flex-1 px-3.5 py-2 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none transition-all">
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-600 mb-1">Appointment Date & Time :</label>
+                                <div class="relative">
+                                    <input type="text" id="modalDateTime" value="30 Jul,2026 | 5:58 PM" 
+                                        class="w-full px-3.5 py-2 border border-gray-200 rounded-lg text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none pr-8">
+                                    <i class="fa-regular fa-calendar-days absolute right-3 top-1/2 -translate-y-1/2 text-blue-600 text-xs"></i>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-600 mb-1">Appointment Duration :</label>
+                                <select id="modalDuration" class="w-full px-3.5 py-2 border border-gray-200 rounded-lg text-xs bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                                    <option value="15 mins">15 mins</option>
+                                    <option value="30 mins" selected>30 mins</option>
+                                    <option value="45 mins">45 mins</option>
+                                    <option value="60 mins">60 mins</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center space-x-2 pt-1">
+                            <input type="checkbox" id="modalTeleConsult" class="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500">
+                            <label for="modalTeleConsult" class="text-xs font-medium text-gray-700 cursor-pointer">Mark as Tele Consultation</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="border border-gray-200 rounded-xl overflow-hidden">
+                    <button type="button" onclick="toggleSection('medicalDetailsSec', 'medicalDetailsChevron')" 
+                        class="w-full px-4 py-3 bg-gray-50 flex items-center justify-between text-xs font-bold text-gray-700 hover:bg-gray-100 transition">
+                        <span>Medical Details</span>
+                        <i id="medicalDetailsChevron" class="fa-solid fa-chevron-down text-gray-400 text-xs transition-transform duration-200"></i>
+                    </button>
+                    <div id="medicalDetailsSec" class="hidden p-4 space-y-3 bg-white border-t border-gray-100 text-xs">
+                        <div>
+                            <label class="block font-semibold text-gray-600 mb-1">Known Allergies / Pre-existing conditions</label>
+                            <input type="text" placeholder="e.g. Hypertension, Diabetes" class="w-full px-3 py-1.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="border border-gray-200 rounded-xl overflow-hidden">
+                    <button type="button" onclick="toggleSection('additionalDetailsSec', 'additionalDetailsChevron')" 
+                        class="w-full px-4 py-3 bg-gray-50 flex items-center justify-between text-xs font-bold text-gray-700 hover:bg-gray-100 transition">
+                        <span>Additional Details</span>
+                        <i id="additionalDetailsChevron" class="fa-solid fa-chevron-down text-gray-400 text-xs transition-transform duration-200"></i>
+                    </button>
+                    <div id="additionalDetailsSec" class="hidden p-4 space-y-3 bg-white border-t border-gray-100 text-xs">
+                        <div>
+                            <label class="block font-semibold text-gray-600 mb-1">Referred By / Marketing Source</label>
+                            <input type="text" placeholder="e.g. Walk-in / Dr. Smith" class="w-full px-3 py-1.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                        </div>
+                    </div>
+                </div>
+            </form>
+
+            <div class="px-6 py-4 bg-gray-50 border-t border-gray-200 sticky bottom-0 z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div class="flex items-center space-x-3 text-xs text-gray-600">
+                    <span class="font-medium text-gray-500">Notify Patient via</span>
+                    <label class="inline-flex items-center space-x-1 cursor-pointer">
+                        <input type="checkbox" checked class="w-3.5 h-3.5 text-blue-600 rounded border-gray-300">
+                        <span class="text-emerald-600 font-semibold flex items-center"><i class="fa-brands fa-whatsapp mr-1 text-sm"></i> whatsapp</span>
+                    </label>
+                    <label class="inline-flex items-center space-x-1 cursor-pointer">
+                        <input type="checkbox" checked class="w-3.5 h-3.5 text-blue-600 rounded border-gray-300">
+                        <span class="text-amber-500 font-semibold flex items-center"><i class="fa-solid fa-comment-sms mr-1 text-xs"></i> sms</span>
+                    </label>
+                </div>
+
+                <div class="flex items-center space-x-3 justify-end">
+                    <button type="button" onclick="handleStartNow()" 
+                        class="px-5 py-2 text-xs font-bold text-blue-600 border border-blue-600 hover:bg-blue-50 rounded-lg transition">
+                        Start Now
+                    </button>
+                    <button type="button" onclick="document.getElementById('appointmentForm').requestSubmit()" 
+                        class="px-5 py-2 text-xs font-bold bg-blue-700 hover:bg-blue-800 text-white rounded-lg shadow-sm transition">
+                        Add Appointment
+                    </button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Invoice View Modal -->
+    <div id="invoiceModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden transform transition-all">
+            <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-blue-50/50">
+                <div class="flex items-center space-x-2">
+                    <i class="fa-solid fa-file-invoice text-blue-600 text-lg"></i>
+                    <h3 class="font-bold text-gray-800 text-base">Consultation Invoice</h3>
+                </div>
+                <button onclick="closeModal('invoiceModal')" class="text-gray-400 hover:text-gray-600 p-1 rounded-lg">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+            <div class="p-6 space-y-4" id="invoiceDetails">
+            </div>
+            <div class="px-6 py-3 bg-gray-50 border-t border-gray-100 flex items-center justify-between">
+                <button onclick="showToast('Invoice sent to printer', 'info'); window.print();" class="px-3 py-1.5 text-xs font-medium border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 flex items-center space-x-1.5">
+                    <i class="fa-solid fa-print"></i>
+                    <span>Print Invoice</span>
+                </button>
+                <button onclick="closeModal('invoiceModal')" class="px-4 py-1.5 text-xs font-medium bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                    Done
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Prescription Preview Modal -->
+    <div id="rxPreviewModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden transform transition-all flex flex-col max-h-[90vh]">
+            <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-blue-50/60 shrink-0">
+                <div class="flex items-center space-x-2">
+                    <i class="fa-solid fa-prescription text-blue-600 text-lg"></i>
+                    <h3 class="font-bold text-gray-800 text-base">Prescription Preview</h3>
+                </div>
+                <button onclick="closeModal('rxPreviewModal')" class="text-gray-400 hover:text-gray-600 p-1 rounded-lg">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+            <div class="p-6 overflow-y-auto custom-scrollbar flex-1" id="prescriptionPreviewContent">
+            </div>
+            <div class="px-6 py-3 bg-gray-50 border-t border-gray-100 flex items-center justify-between shrink-0">
+                <button onclick="showToast('Prescription sent to printer', 'info'); window.print();" class="px-4 py-1.5 text-xs font-medium border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 flex items-center space-x-1.5">
+                    <i class="fa-solid fa-print"></i>
+                    <span>Print Rx</span>
+                </button>
+                <div class="flex space-x-2">
+                    <button onclick="showToast('Prescription saved to EHR', 'success'); closeModal('rxPreviewModal');" class="px-4 py-1.5 text-xs font-medium border border-blue-600 text-blue-600 rounded-lg hover:bg-blue-50">
+                        Save Draft
+                    </button>
+                    <button onclick="showToast('Prescription sent to patient via WhatsApp & SMS', 'success'); closeModal('rxPreviewModal');" class="px-4 py-1.5 text-xs font-medium bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                        Send to Patient
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Patient Details Modal -->
+    <div id="patientDetailsModal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden transform transition-all">
+            <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-gray-50">
+                <div class="flex items-center space-x-2">
+                    <i class="fa-solid fa-address-card text-blue-600 text-lg"></i>
+                    <h3 class="font-bold text-gray-800 text-base">Patient Profile</h3>
+                </div>
+                <button onclick="closeModal('patientDetailsModal')" class="text-gray-400 hover:text-gray-600 p-1 rounded-lg">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+            <div class="p-6 space-y-4" id="patientDetailsContent">
+            </div>
+            <div class="px-6 py-3 bg-gray-50 border-t border-gray-100 flex items-center justify-end">
+                <button onclick="closeModal('patientDetailsModal')" class="px-4 py-1.5 text-xs font-medium bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Floating Toast Notification Container -->
+    <div id="toastNotification" class="fixed bottom-6 left-1/2 -translate-x-1/2 bg-gray-900 text-white px-5 py-3 rounded-xl shadow-2xl flex items-center space-x-3 text-xs z-50 transition-all duration-300 transform translate-y-20 opacity-0 pointer-events-none">
+        <i id="toastIcon" class="fa-solid fa-circle-check text-emerald-400 text-base"></i>
+        <span id="toastMessage" class="font-medium">Action completed successfully</span>
+    </div>
+
+    <script>
+        let appointments = [
+            {
+                id: '01',
+                name: 'Shweta',
+                gender: 'F',
+                age: 12,
+                time: '5:12 PM',
+                date: 'Jul 30, 2026',
+                status: 'Completed',
+                fee: '500',
+                uhid: 'UH2026073001',
+                mobile: '+91 9876543210'
+            },
+            {
+                id: '02',
+                name: 'Rohan Sharma',
+                gender: 'M',
+                age: 28,
+                time: '4:30 PM',
+                date: 'Jul 30, 2026',
+                status: 'Completed',
+                fee: '500',
+                uhid: 'UH2026073002',
+                mobile: '+91 9123456789'
+            }
+        ];
+
+        let ipdPatients = [
+            { id: 'IPD01', name: 'Vikram Singh', uhid: 'UH2026072501', age: 45, gender: 'M', ward: 'General Ward - Bed 04', admissionDate: 'Jul 28, 2026', diagnosis: 'Dengue Fever', status: 'Stable' },
+            { id: 'IPD02', name: 'Anita Desai', uhid: 'UH2026072102', age: 34, gender: 'F', ward: 'ICU - Bed 02', admissionDate: 'Jul 25, 2026', diagnosis: 'Severe Pneumonia', status: 'Critical' },
+            { id: 'IPD03', name: 'Rahul Verma', uhid: 'UH2026073005', age: 28, gender: 'M', ward: 'Private - Room 101', admissionDate: 'Aug 01, 2026', diagnosis: 'Post-op Appendectomy', status: 'Recovering' },
+            { id: 'IPD04', name: 'Kavita Patel', uhid: 'UH2026073109', age: 52, gender: 'F', ward: 'General Ward - Bed 12', admissionDate: 'Jul 30, 2026', diagnosis: 'Typhoid', status: 'Stable' }
+        ];
+
+        let currentActivePatient = null;
+        let currentTab = 'All Appointments';
+        let sortAsc = true;
+        let currentDate = new Date();
+
+        function updateCounts() {
+            const stats = { Total: appointments.length, Completed: 0, Waiting: 0, Scheduled: 0, Active: 0, Cancelled: 0 };
+            let revenue = 0;
+            appointments.forEach(a => {
+                stats[a.status] = (stats[a.status] || 0) + 1;
+                if(a.status === 'Completed' && a.fee) revenue += parseInt(a.fee);
+                if(a.status === 'Waiting In Clinic') stats.Waiting++;
+            });
+
+            const statTotalEl = document.getElementById('statTotal');
+            if(statTotalEl) statTotalEl.innerText = stats.Total;
+
+            const statCompletedEl = document.getElementById('statCompleted');
+            if(statCompletedEl) statCompletedEl.innerText = stats.Completed;
+
+            const statWaitingEl = document.getElementById('statWaiting');
+            if(statWaitingEl) statWaitingEl.innerText = stats.Waiting;
+
+            const statRevenueEl = document.getElementById('statRevenue');
+            if(statRevenueEl) statRevenueEl.innerText = '₹ ' + revenue;
+
+            if(document.getElementById('badge-all')) document.getElementById('badge-all').innerText = '(' + stats.Total + ')';
+            if(document.getElementById('badge-waiting')) document.getElementById('badge-waiting').innerText = '(' + stats.Waiting + ')';
+            if(document.getElementById('badge-scheduled')) document.getElementById('badge-scheduled').innerText = '(' + (stats.Scheduled || 0) + ')';
+            if(document.getElementById('badge-active')) document.getElementById('badge-active').innerText = '(' + (stats.Active || 0) + ')';
+            if(document.getElementById('badge-completed')) document.getElementById('badge-completed').innerText = '(' + stats.Completed + ')';
+            if(document.getElementById('badge-cancelled')) document.getElementById('badge-cancelled').innerText = '(' + (stats.Cancelled || 0) + ')';
+        }
+
+        function updateDateDisplay() {
+            const display = document.getElementById('currentDateDisplay');
+            if (display) {
+                display.innerText = currentDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+            }
+        }
+
+        function changeDate(offset) {
+            currentDate.setDate(currentDate.getDate() + offset);
+            updateDateDisplay();
+        }
+
+        function openModal(id) {
+            const modal = document.getElementById(id);
+            if (modal) modal.classList.remove('hidden');
+        }
+
+        function closeModal(id) {
+            const modal = document.getElementById(id);
+            if (modal) modal.classList.add('hidden');
+        }
+
+        function sortData(key) {
+            sortAsc = !sortAsc;
+            appointments.sort((a, b) => {
+                let valA = a[key];
+                let valB = b[key];
+                if (key === 'time') {
+                    valA = new Date('1970/01/01 ' + a[key]).getTime();
+                    valB = new Date('1970/01/01 ' + b[key]).getTime();
+                } else {
+                    valA = valA.toString().toLowerCase();
+                    valB = valB.toString().toLowerCase();
+                }
+                if (valA < valB) return sortAsc ? -1 : 1;
+                if (valA > valB) return sortAsc ? 1 : -1;
+                return 0;
+            });
+            renderTable();
+        }
+
+        function scrollToRxSection(id) {
+            const el = document.getElementById(id);
+            if (el) el.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function selectMedicineChip(name) {
+            const input = document.getElementById('medicineInputName');
+            if (input) input.value = name;
+        }
+
+        function selectTestChip(name) {
+            const input = document.getElementById('investigationTestInput');
+            if (input) {
+                if (input.value) input.value += ', ' + name;
+                else input.value = name;
+            }
+        }
+
+        function updateClock() {
+            const now = new Date();
+            const clockEl = document.getElementById('clockTime');
+            if (clockEl) {
+                clockEl.innerText = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            updateClock();
+            setInterval(updateClock, 1000);
+
+            // Dynamically set default date & time in Add Appointment Modal
+            const now = new Date();
+            const dateStr = now.toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' });
+            const timeStr = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+            const modalDateTimeEl = document.getElementById('modalDateTime');
+            if (modalDateTimeEl) {
+                modalDateTimeEl.value = `${dateStr} | ${timeStr}`;
+            }
+
+            renderTable();
+            renderIPDTable();
+            updateCounts();
+            updateDateDisplay();
+        });
+
+        function updateSidebarNav(activeId) {
+            const navBtnIds = ['nav-dashboard', 'nav-ipd'];
+            navBtnIds.forEach(id => {
+                const btn = document.getElementById(id);
+                if (btn) {
+                    if (id === activeId) {
+                        btn.className = "p-2.5 text-blue-600 bg-blue-50 rounded-xl w-10 h-10 flex items-center justify-center hover:bg-blue-100 transition";
+                    } else {
+                        btn.className = "p-2.5 text-gray-500 hover:text-blue-600 hover:bg-gray-100 rounded-xl w-10 h-10 flex items-center justify-center transition";
+                    }
+                }
+            });
+        }
+
+        function showDashboard() {
+            document.getElementById('dashboardView').classList.remove('hidden');
+            document.getElementById('outpatientMain').classList.remove('hidden');
+            document.getElementById('ipdMain').classList.add('hidden');
+            document.getElementById('consultationView').classList.add('hidden');
+            document.getElementById('fabButton').classList.remove('hidden');
+            updateSidebarNav('nav-dashboard');
+            renderTable();
+            updateCounts();
+        }
+
+        function showIPDView() {
+            document.getElementById('dashboardView').classList.remove('hidden');
+            document.getElementById('outpatientMain').classList.add('hidden');
+            document.getElementById('ipdMain').classList.remove('hidden');
+            document.getElementById('consultationView').classList.add('hidden');
+            document.getElementById('fabButton').classList.remove('hidden'); // Keep quick add button
+            updateSidebarNav('nav-ipd');
+            renderIPDTable();
+        }
+
+        function calculateStayDuration(admissionDateStr) {
+            const admissionDate = new Date(admissionDateStr);
+            const today = new Date(); // Uses current date
+            const diffTime = Math.abs(today - admissionDate);
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+            return diffDays;
+        }
+
+        function renderIPDTable() {
+            const tbody = document.getElementById('ipdTableBody');
+            if(!tbody) return;
+            tbody.innerHTML = '';
+            
+            let totalStay = 0;
+            let criticalCount = 0;
+
+            ipdPatients.forEach(patient => {
+                const stayDays = calculateStayDuration(patient.admissionDate);
+                totalStay += stayDays;
+                if (patient.status === 'Critical') criticalCount++;
+
+                const statusColor = patient.status === 'Critical' ? 'text-red-600 bg-red-50 border-red-200' 
+                                  : patient.status === 'Recovering' ? 'text-blue-600 bg-blue-50 border-blue-200' 
+                                  : 'text-emerald-600 bg-emerald-50 border-emerald-200';
+
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-blue-50/30 transition-colors group';
+                tr.innerHTML = `
+                    <td class="py-3 px-6">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-8 h-8 rounded-full bg-blue-100 text-blue-700 font-bold flex items-center justify-center text-xs shrink-0">
+                                ${patient.name.charAt(0)}
+                            </div>
+                            <div>
+                                <div class="font-bold text-gray-800 text-xs">${patient.name}</div>
+                                <div class="text-[11px] text-gray-500 mt-0.5">${patient.uhid} | ${patient.gender}, ${patient.age} Yrs</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="py-3 px-6">
+                        <div class="font-medium text-gray-800 flex items-center">
+                            <i class="fa-solid fa-bed text-[10px] text-gray-400 mr-1.5"></i>
+                            ${patient.ward}
+                        </div>
+                    </td>
+                    <td class="py-3 px-6">
+                        <div class="font-medium text-gray-800">${patient.admissionDate}</div>
+                        <div class="text-[11px] text-gray-500 mt-0.5"><i class="fa-regular fa-clock text-[10px] mr-1"></i>${stayDays} Days Stay</div>
+                    </td>
+                    <td class="py-3 px-6">
+                        <div class="font-bold text-gray-700 truncate max-w-[150px]" title="${patient.diagnosis}">${patient.diagnosis}</div>
+                        <div class="mt-1 inline-block border text-[10px] px-1.5 py-0.5 rounded font-semibold ${statusColor}">${patient.status}</div>
+                    </td>
+                    <td class="py-3 px-6 text-right">
+                        <button class="text-blue-600 hover:bg-blue-50 border border-transparent hover:border-blue-200 px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all inline-flex items-center">
+                            <i class="fa-solid fa-file-waveform mr-1.5"></i>
+                            Chart
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            // Update Header Stats
+            document.getElementById('statIpdTotal').innerText = ipdPatients.length;
+            document.getElementById('statIpdAvgStay').innerText = ipdPatients.length > 0 ? (totalStay / ipdPatients.length).toFixed(1) + ' Days' : '0 Days';
+            document.getElementById('statIpdCritical').innerText = criticalCount;
+        }
+
+        function startConsultationForPatient(patientObj) {
+            currentActivePatient = patientObj;
+
+            // Fill header info
+            document.getElementById('activePatientName').innerText = patientObj.name;
+            document.getElementById('activePatientUHID').innerText = patientObj.uhid;
+            
+            const genderStr = patientObj.gender === 'M' ? 'Male' : (patientObj.gender === 'F' ? 'Female' : 'Other');
+            document.getElementById('activePatientMeta').innerText = `${genderStr} | ${patientObj.age} Years | Mobile: ${patientObj.mobile || '+91 9876543210'}`;
+
+            // Set Initials
+            const nameParts = patientObj.name.trim().split(' ');
+            let initials = nameParts[0][0] || 'P';
+            if (nameParts.length > 1) initials += nameParts[1][0];
+            document.getElementById('activePatientInitials').innerText = initials.toUpperCase();
+
+            // Switch view
+            document.getElementById('dashboardView').classList.add('hidden');
+            document.getElementById('consultationView').classList.remove('hidden');
+            document.getElementById('fabButton').classList.add('hidden');
+            closeModal('addAppointmentModal');
+        }
+
+        function endConsultation() {
+            if (currentActivePatient) {
+                currentActivePatient.status = 'Completed';
+            }
+            showDashboard();
+        }
+
+        function previewPrescriptionModal() {
+            alert(`Generating prescription preview for ${currentActivePatient ? currentActivePatient.name : 'Patient'}...`);
+        }
+
+        function toggleChip(btn, text) {
+            btn.classList.toggle('active');
+            const input = document.getElementById('complaintInputName');
+            if (btn.classList.contains('active')) {
+                if (!input.value) {
+                    input.value = text;
+                } else {
+                    input.value += `, ${text}`;
+                }
+            }
+        }
+
+        function selectGender(gender) {
+            document.getElementById('modalGender').value = gender;
+            ['M', 'F', 'O'].forEach(g => {
+                const btn = document.getElementById(`gender-${g}`);
+                if (g === gender) {
+                    btn.className = "gender-btn px-6 py-1.5 rounded-lg text-xs font-medium border border-blue-600 bg-blue-50 text-blue-700 transition-all";
+                } else {
+                    btn.className = "gender-btn px-6 py-1.5 rounded-lg text-xs font-medium border border-gray-200 bg-white text-gray-600 hover:bg-gray-50 transition-all";
+                }
+            });
+        }
+
+        function toggleSection(secId, chevronId) {
+            document.getElementById(secId).classList.toggle('hidden');
+            document.getElementById(chevronId).classList.toggle('rotate-180');
+        }
+
+        function handleAddAppointment(e, initialStatus = 'Scheduled') {
+            if (e && typeof e.preventDefault === 'function') {
+                e.preventDefault();
+            }
+
+            const firstName = document.getElementById('modalFirstName').value.trim();
+            const lastName = document.getElementById('modalLastName').value.trim();
+            const fullName = `${firstName} ${lastName}`.trim() || 'New Patient';
+
+            const gender = document.getElementById('modalGender').value;
+            const age = document.getElementById('modalAge').value || 12;
+            const mobile = document.getElementById('modalMobile').value || '9876543210';
+            const dateTime = document.getElementById('modalDateTime').value;
+
+            let formattedTime = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+            if (dateTime.includes('|')) {
+                formattedTime = dateTime.split('|')[1].trim();
+            } else if (dateTime) {
+                formattedTime = dateTime;
+            }
+
+            const newId = (appointments.length + 1).toString().padStart(2, '0');
+            const now = new Date();
+            const formattedDate = now.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+            const newPatientObj = {
+                id: newId,
+                name: fullName,
+                gender: gender,
+                age: age,
+                time: formattedTime,
+                date: formattedDate,
+                status: initialStatus,
+                fee: '500',
+                uhid: `UH${now.getFullYear()}${(now.getMonth()+1).toString().padStart(2,'0')}${now.getDate().toString().padStart(2,'0')}${newId}`,
+                mobile: `+91 ${mobile}`
+            };
+
+            appointments.unshift(newPatientObj);
+
+            document.getElementById('appointmentForm').reset();
+            selectGender('M');
+            
+            if (initialStatus === 'Active') {
+                startConsultationForPatient(newPatientObj);
+            } else {
+                closeModal('addAppointmentModal');
+                updateCounts();
+                renderTable();
+            }
+        }
+
+        function handleStartNow() {
+            const form = document.getElementById('appointmentForm');
+            if (!form.checkValidity()) {
+                form.reportValidity();
+                return;
+            }
+            handleAddAppointment(null, 'Active');
+        }
+
+        function toggleSummary() {
+            document.getElementById('summaryBox').classList.toggle('hidden');
+            document.getElementById('summaryChevron').classList.toggle('rotate-180');
+        }
+
+        function setActiveTab(tabName) {
+            currentTab = tabName;
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('border-blue-600', 'text-blue-600');
+                btn.classList.add('border-transparent', 'text-gray-500');
+            });
+
+            const activeBtn = document.getElementById(`tab-${tabName}`);
+            if (activeBtn) {
+                activeBtn.classList.remove('border-transparent', 'text-gray-500');
+                activeBtn.classList.add('border-blue-600', 'text-blue-600');
+            }
+
+            renderTable();
+        }
+
+        function renderTable() {
+            const tbody = document.getElementById('appointmentsTableBody');
+            const emptyState = document.getElementById('emptyState');
+            const searchQuery = document.getElementById('searchInput').value.toLowerCase().trim();
+
+            let filtered = appointments.filter(app => {
+                const matchesTab = (currentTab === 'All Appointments') || (app.status === currentTab);
+                const matchesSearch = app.name.toLowerCase().includes(searchQuery) || 
+                                      app.uhid.toLowerCase().includes(searchQuery) || 
+                                      app.id.includes(searchQuery);
+                return matchesTab && matchesSearch;
+            });
+
+            tbody.innerHTML = '';
+
+            if (filtered.length === 0) {
+                emptyState.classList.remove('hidden');
+                return;
+            } else {
+                emptyState.classList.add('hidden');
+            }
+
+            filtered.forEach((item) => {
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-blue-50/30 transition-colors group';
+
+                tr.innerHTML = `
+                    <td class="py-3.5 px-6">
+                        <div class="flex items-center space-x-4">
+                            <span class="text-xs font-semibold text-gray-400 tracking-wider">${item.id}</span>
+                            <div>
+                                <div class="font-semibold text-gray-800 text-xs flex items-center space-x-2">
+                                    <span>${item.name}</span>
+                                    <span class="text-[10px] px-1.5 py-0.2 rounded font-normal ${item.status === 'Completed' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}">${item.status}</span>
+                                </div>
+                                <div class="text-[11px] text-gray-500 mt-0.5">
+                                    <span class="font-medium">${item.gender}</span>
+                                    <span class="mx-1">|</span>
+                                    <span>${item.age} Years</span>
+                                </div>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="py-3.5 px-6">
+                        <div>
+                            <div class="font-semibold text-gray-800 text-xs">${item.time}</div>
+                            <div class="text-[11px] text-gray-500 mt-0.5">${item.date}</div>
+                        </div>
+                    </td>
+                    <td class="py-3.5 px-6">
+                        <div class="flex items-center space-x-2.5">
+                            <button onclick="viewInvoice('${item.id}')" 
+                                class="border border-blue-200 text-blue-600 bg-blue-50/50 hover:bg-blue-100 hover:border-blue-300 px-3 py-1.5 rounded-lg text-xs font-medium flex items-center space-x-1.5 transition-all shadow-xs">
+                                <i class="fa-solid fa-file-invoice-dollar text-blue-500"></i>
+                                <span>Invoice</span>
+                            </button>
+
+                            <button onclick="startConsultationForPatient(appointments.find(a => a.id === '${item.id}'))" 
+                                class="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition" title="Start Consultation / Prescription">
+                                <i class="fa-solid fa-prescription text-base"></i>
+                            </button>
+
+                            <button onclick="viewPatientDetails('${item.id}')" 
+                                class="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-gray-100 rounded-lg transition" title="View Patient Details">
+                                <i class="fa-regular fa-eye text-sm"></i>
+                            </button>
+
+                            <button onclick="showToast('Payment completed: ₹${item.fee} received via UPI/Cash', 'success')" 
+                                class="w-7 h-7 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-xs hover:bg-emerald-200 transition" title="Paid">
+                                ₹
+                            </button>
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function filterAppointments() {
+            renderTable();
+        }
+        function endConsultation() {
+            if (currentActivePatient) {
+                currentActivePatient.status = 'Completed';
+            }
+            showToast('Consultation completed & saved successfully!', 'success');
+            showDashboard();
+        }
+
+        function previewPrescriptionModal() {
+            const name = currentActivePatient ? currentActivePatient.name : 'ad adz';
+            const uhid = currentActivePatient ? currentActivePatient.uhid : 'UH2026073001';
+            const previewContainer = document.getElementById('prescriptionPreviewContent');
+            
+            previewContainer.innerHTML = `
+                <div class="p-6 bg-white rounded-xl border border-gray-200 font-sans space-y-4">
+                    <div class="border-b border-gray-200 pb-4 flex justify-between items-start">
+                        <div>
+                            <h3 class="text-lg font-bold text-blue-900">BAJAJ FINSERV HEALTH CLINIC</h3>
+                            <p class="text-xs font-semibold text-gray-700">Dr. Shreya Alandkar (MBBS, MD)</p>
+                            <p class="text-[11px] text-gray-500">Reg No: MH-2024-88712 | General Medicine</p>
+                        </div>
+                        <div class="text-right text-xs text-gray-500">
+                            <p class="font-bold text-gray-700">Date: ${new Date().toLocaleDateString('en-US', {month: 'short', day: 'numeric', year: 'numeric'})}</p>
+                            <p>UHID: ${uhid}</p>
+                        </div>
+                    </div>
+
+                    <div class="bg-blue-50/60 p-3 rounded-lg text-xs grid grid-cols-2 gap-2 text-gray-700">
+                        <div><strong class="text-gray-900">Patient:</strong> ${name}</div>
+                        <div><strong class="text-gray-900">Age/Gender:</strong> 12 Y / Male</div>
+                        <div><strong class="text-gray-900">Contact:</strong> +91 9876543210</div>
+                        <div><strong class="text-gray-900">Vitals:</strong> BP 120/80 | SpO2 99% | Temp 98.6°F</div>
+                    </div>
+
+                    <div class="space-y-3 text-xs">
+                        <div>
+                            <h4 class="font-bold text-gray-800 border-b pb-1 text-xs uppercase tracking-wide text-blue-800">Chief Complaints</h4>
+                            <p class="text-gray-600 mt-1">Vomiting, Fever (2 Days), Mild Headache</p>
+                        </div>
+
+                        <div>
+                            <h4 class="font-bold text-gray-800 border-b pb-1 text-xs uppercase tracking-wide text-blue-800">Prescribed Rx / Medications</h4>
+                            <ul class="list-disc list-inside space-y-1 text-gray-700 mt-1">
+                                <li><strong>SPECIFIX 200</strong> - 1 Tab (1 - 0 - 1) After Meal for 5 Days</li>
+                                <li><strong>DOLO 650MG TAB</strong> - 1 Tab (1 - 1 - 1) After Meal for 3 Days</li>
+                                <li><strong>PAN D CAP</strong> - 1 Cap (1 - 0 - 0) Before Meal for 5 Days</li>
+                            </ul>
+                        </div>
+
+                        <div>
+                            <h4 class="font-bold text-gray-800 border-b pb-1 text-xs uppercase tracking-wide text-blue-800">Investigations / Tests</h4>
+                            <p class="text-gray-600 mt-1">CBC, CRP, Serum Electrolytes</p>
+                        </div>
+
+                        <div>
+                            <h4 class="font-bold text-gray-800 border-b pb-1 text-xs uppercase tracking-wide text-blue-800">Advice & Instructions</h4>
+                            <p class="text-gray-600 mt-1">Take adequate bed rest. Drink plenty of fluids/electrolytes. Follow up after 3 days if fever persists.</p>
+                        </div>
+                    </div>
+
+                    <div class="pt-6 border-t border-gray-200 flex justify-between items-end">
+                        <div class="text-[10px] text-gray-400">
+                            Digitally signed via Bajaj Finserv Health E-Rx System
+                        </div>
+                        <div class="text-right">
+                            <p class="text-xs font-bold text-gray-800">Dr. Shreya Alandkar</p>
+                            <p class="text-[10px] text-gray-500">Authorized Medical Officer</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+            openModal('rxPreviewModal');
+        }
+
+        function showToast(message, type = 'info') {
+            const toast = document.getElementById('toastNotification');
+            const toastMsg = document.getElementById('toastMessage');
+            const toastIcon = document.getElementById('toastIcon');
+            if (!toast || !toastMsg) return;
+
+            toastMsg.innerText = message;
+            if (type === 'success') {
+                toastIcon.className = 'fa-solid fa-circle-check text-emerald-400 text-base';
+            } else if (type === 'warning') {
+                toastIcon.className = 'fa-solid fa-triangle-exclamation text-amber-400 text-base';
+            } else {
+                toastIcon.className = 'fa-solid fa-circle-info text-blue-400 text-base';
+            }
+
+            toast.classList.remove('translate-y-20', 'opacity-0', 'pointer-events-none');
+            toast.classList.add('translate-y-0', 'opacity-100');
+
+            setTimeout(() => {
+                toast.classList.remove('translate-y-0', 'opacity-100');
+                toast.classList.add('translate-y-20', 'opacity-0', 'pointer-events-none');
+            }, 3000);
+        }
+
+        function viewPatientDetails(id) {
+            const app = appointments.find(a => a.id === id);
+            if (!app) return;
+
+            const container = document.getElementById('patientDetailsContent');
+            container.innerHTML = `
+                <div class="flex items-center space-x-4 pb-4 border-b border-gray-100">
+                    <div class="w-12 h-12 rounded-full bg-blue-600 text-white font-bold flex items-center justify-center text-base">
+                        ${app.name.split(' ').map(n => n[0]).join('').toUpperCase()}
+                    </div>
+                    <div>
+                        <h4 class="font-bold text-gray-800 text-base">${app.name}</h4>
+                        <p class="text-xs text-gray-500">${app.uhid} | ${app.gender === 'M' ? 'Male' : 'Female'}, ${app.age} Yrs</p>
+                        <p class="text-xs text-blue-600 font-medium mt-0.5"><i class="fa-solid fa-phone text-[10px] mr-1"></i> ${app.mobile}</p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3 text-xs">
+                    <div class="bg-gray-50 p-2.5 rounded-lg border border-gray-100">
+                        <span class="text-gray-400 block text-[11px]">Appointment Status</span>
+                        <span class="font-semibold text-emerald-600">${app.status}</span>
+                    </div>
+                    <div class="bg-gray-50 p-2.5 rounded-lg border border-gray-100">
+                        <span class="text-gray-400 block text-[11px]">Consultation Fee</span>
+                        <span class="font-semibold text-gray-800">₹ ${app.fee} (Paid)</span>
+                    </div>
+                    <div class="bg-gray-50 p-2.5 rounded-lg border border-gray-100">
+                        <span class="text-gray-400 block text-[11px]">Visit Date</span>
+                        <span class="font-medium text-gray-700">${app.date}</span>
+                    </div>
+                    <div class="bg-gray-50 p-2.5 rounded-lg border border-gray-100">
+                        <span class="text-gray-400 block text-[11px]">Time Slot</span>
+                        <span class="font-medium text-gray-700">${app.time}</span>
+                    </div>
+                </div>
+
+                <div class="bg-blue-50/50 border border-blue-100 p-3 rounded-lg text-xs">
+                    <h5 class="font-bold text-blue-900 mb-1">Recent Medical Notes</h5>
+                    <p class="text-gray-600">Patient reported mild fever and vomiting since 2 days. Prescribed symptomatic treatment and routine lab workup.</p>
+                </div>
+            `;
+            openModal('patientDetailsModal');
+        }
+
+        function toggleChip(btn, text) {
+            btn.classList.toggle('active');
+            const input = document.getElementById('complaintInputName');
+            if (btn.classList.contains('active')) {
+                if (!input.value) {
+                    input.value = text;
+                } else {
+                    input.value += `, ${text}`;
+                }
+            }
+        }
+
+        function viewInvoice(id) {
+            const app = appointments.find(a => a.id === id);
+            if (!app) return;
+
+            const container = document.getElementById('invoiceDetails');
+            container.innerHTML = `
+                <div class="border-b border-gray-100 pb-3 flex justify-between items-start">
+                    <div>
+                        <h4 class="font-bold text-gray-800">Vatsalya Hospital</h4>
+                        <p class="text-xs text-gray-500">Dr. Rutuja, Dr. Rajkumar Salunke (MBBS,MS,DNB(OBGY))</p>
+                        <p class="text-[11px] text-gray-400">Reg No: MH-2024-88712</p>
+                    </div>
+                    <div class="text-right">
+                        <span class="bg-emerald-100 text-emerald-700 text-[10px] font-bold px-2 py-0.5 rounded">PAID</span>
+                        <p class="text-xs text-gray-500 mt-1">Invoice #${app.uhid}</p>
+                    </div>
+                </div>
+
+                <div class="bg-gray-50 p-3 rounded-lg text-xs space-y-1.5">
+                    <div class="flex justify-between"><span class="text-gray-500">Patient Name:</span><span class="font-semibold text-gray-800">${app.name}</span></div>
+                    <div class="flex justify-between"><span class="text-gray-500">Gender / Age:</span><span class="font-medium text-gray-700">${app.gender} | ${app.age} Yrs</span></div>
+                    <div class="flex justify-between"><span class="text-gray-500">Date & Time:</span><span class="text-gray-700">${app.date} at ${app.time}</span></div>
+                </div>
+
+                <table class="w-full text-xs">
+                    <thead>
+                        <tr class="border-b border-gray-200 text-gray-500 text-left">
+                            <th class="py-1.5">Service Description</th>
+                            <th class="py-1.5 text-right">Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100">
+                        <tr>
+                            <td class="py-2">In-Clinic Consultation Fee</td>
+                            <td class="py-2 text-right font-medium">₹ ${app.fee}.00</td>
+                        </tr>
+                    </tbody>
+                    <tfoot>
+                        <tr class="font-bold text-gray-800 border-t border-gray-200">
+                            <td class="pt-2">Total Amount Paid</td>
+                            <td class="pt-2 text-right text-blue-600">₹ ${app.fee}.00</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            `;
+            openModal('invoiceModal');
+        }
+    </script>
+</body>
+</html>
